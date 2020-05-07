@@ -38,8 +38,6 @@
             this.undoPatchToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.separatorToolStripMenuItem = new System.Windows.Forms.ToolStripSeparator();
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.WebsiteLink = new System.Windows.Forms.LinkLabel();
-            this.Heartbeat = new System.Windows.Forms.Timer(this.components);
             this.VolumeMixerButton = new System.Windows.Forms.Button();
             this.StatusLabel = new System.Windows.Forms.Label();
             this.BlockBannersCheckbox = new System.Windows.Forms.CheckBox();
@@ -84,14 +82,12 @@
             this.websiteToolStripMenuItem.Name = "websiteToolStripMenuItem";
             resources.ApplyResources(this.websiteToolStripMenuItem, "websiteToolStripMenuItem");
             this.websiteToolStripMenuItem.Text = global::EZBlocker.Properties.strings.ToolStripWebsite;
-            this.websiteToolStripMenuItem.Click += new System.EventHandler(this.websiteToolStripMenuItem_Click);
             // 
             // undoPatchToolStripMenuItem
             // 
             this.undoPatchToolStripMenuItem.Name = "undoPatchToolStripMenuItem";
             resources.ApplyResources(this.undoPatchToolStripMenuItem, "undoPatchToolStripMenuItem");
             this.undoPatchToolStripMenuItem.Text = global::EZBlocker.Properties.strings.ToolStripRemovePatch;
-            this.undoPatchToolStripMenuItem.Click += new System.EventHandler(this.undoPatchToolStripMenuItem_Click);
             // 
             // separatorToolStripMenuItem
             // 
@@ -104,19 +100,6 @@
             resources.ApplyResources(this.exitToolStripMenuItem, "exitToolStripMenuItem");
             this.exitToolStripMenuItem.Text = global::EZBlocker.Properties.strings.ToolStripExit;
             this.exitToolStripMenuItem.Click += new System.EventHandler(this.exitToolStripMenuItem_Click);
-            // 
-            // WebsiteLink
-            // 
-            resources.ApplyResources(this.WebsiteLink, "WebsiteLink");
-            this.WebsiteLink.Name = "WebsiteLink";
-            this.WebsiteLink.TabStop = true;
-            this.WebsiteLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.WebsiteLink_LinkClicked);
-            // 
-            // Heartbeat
-            // 
-            this.Heartbeat.Enabled = true;
-            this.Heartbeat.Interval = 60000;
-            this.Heartbeat.Tick += new System.EventHandler(this.Heartbeat_Tick);
             // 
             // VolumeMixerButton
             // 
@@ -164,7 +147,6 @@
             this.Controls.Add(this.BlockBannersCheckbox);
             this.Controls.Add(this.StatusLabel);
             this.Controls.Add(this.VolumeMixerButton);
-            this.Controls.Add(this.WebsiteLink);
             this.Cursor = System.Windows.Forms.Cursors.Default;
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
@@ -179,8 +161,6 @@
 
         #endregion
         private System.Windows.Forms.NotifyIcon NotifyIcon;
-        private System.Windows.Forms.LinkLabel WebsiteLink;
-        private System.Windows.Forms.Timer Heartbeat;
         private System.Windows.Forms.Button VolumeMixerButton;
         private System.Windows.Forms.Label StatusLabel;
         private System.Windows.Forms.CheckBox BlockBannersCheckbox;

@@ -31,10 +31,7 @@ namespace EZBlocker
 
         public static void SetMute(ISimpleAudioVolume v, bool mute)
         {
-            if (v == null)
-                return;
-
-            v.SetMute(mute, Guid.Empty);
+            v?.SetMute(mute, Guid.Empty);
         }
 
         public static float? GetVolume(ISimpleAudioVolume v)

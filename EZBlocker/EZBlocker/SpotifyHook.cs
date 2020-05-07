@@ -22,7 +22,7 @@ namespace EZBlocker
         {
             RefreshTimer = new Timer((e) =>
             {
-                if (IsRunning())
+                if (IsRunning() && Spotify !=null)
                 {
                     WindowName = Spotify.MainWindowTitle;
                     Handle = Spotify.MainWindowHandle;
