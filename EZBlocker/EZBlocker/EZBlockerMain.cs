@@ -11,7 +11,6 @@ namespace EZBlocker
 {
     public partial class Main : Form
     {
-        private bool muted;
         private string lastMessage = "";
         private readonly ToolTip artistTooltip = new ToolTip();
         private readonly string volumeMixerPath = Environment.GetEnvironmentVariable("WINDIR") + @"\System32\SndVol.exe";
@@ -20,7 +19,6 @@ namespace EZBlocker
 
         public Main()
         {
-            AudioUtils.SetMute(hook.VolumeControl.Control, false);
             Thread.CurrentThread.CurrentUICulture = Thread.CurrentThread.CurrentCulture;
             InitializeComponent();
         }
@@ -31,72 +29,72 @@ namespace EZBlocker
          **/
         private void MainTimer_Tick(object sender, EventArgs e)
         {
-            try {
-                if (hook.IsRunning())
-                {
-                    if (hook.IsAdPlaying())
-                    {
-                        if (MainTimer.Interval != 1000) MainTimer.Interval = 1000;
-                        if (!muted) Mute(true);
-                        if (!hook.IsPlaying())
-                        {
-                            AudioUtils.SendNextTrack(hook.Handle == IntPtr.Zero ? Handle : hook.Handle);
-                            Thread.Sleep(500);
-                        }
-
-                        string artist = hook.GetArtist();
-                        string message = Properties.strings.StatusMuting + " " + Truncate(artist);
-                        if (lastMessage != message)
-                        {
-                            lastMessage = message;
-                            StatusLabel.Text = message;
-                            artistTooltip.SetToolTip(StatusLabel, artist);
-                        }
-                    }
-                    else if (hook.IsPlaying() && !hook.WindowName.Equals("Spotify Free")) // Normal music
-                    {
-                        if (muted)
-                        {
-                            Thread.Sleep(500); // Give extra time for ad to change out
-                            Mute(false);
-                        }
-                        if (MainTimer.Interval != 200) MainTimer.Interval = 200;
-
-                        string artist = hook.GetArtist();
-                        string message = Properties.strings.StatusPlaying + " " + Truncate(artist);
-                        if (lastMessage != message)
-                        {
-                            lastMessage = message;
-                            StatusLabel.Text = message;
-                            artistTooltip.SetToolTip(StatusLabel, artist);
-                        }
-                    }
-                    else if (hook.WindowName.Equals("Spotify Free"))
-                    {
-                        string message = Properties.strings.StatusPaused;
-                        if (lastMessage != message)
-                        {
-                            lastMessage = message;
-                            StatusLabel.Text = message;
-                            artistTooltip.SetToolTip(StatusLabel, "");
-                        }
-                    }
-                }
-                else
+            if (hook.Check())
+            {
+                if (hook.IsAdPlaying())
                 {
                     if (MainTimer.Interval != 1000) MainTimer.Interval = 1000;
-                    string message = Properties.strings.StatusNotFound;
+                    if (!Muted) Mute(true);
+
+                    if (!hook.IsPlaying())
+                    {
+                        AudioUtils.SendNextTrack(hook.Handle == IntPtr.Zero ? Handle : hook.Handle);
+                        Thread.Sleep(500);
+                    }
+
+                    string artist = hook.GetArtist();
+                    string message = Properties.strings.StatusMuting + " " + Truncate(artist);
+                    if (lastMessage != message)
+                    {
+                        lastMessage = message;
+                        StatusLabel.Text = message;
+                        artistTooltip.SetToolTip(StatusLabel, artist);
+                    }
+                }
+                else if (hook.IsPlaying() && !hook.WindowName.Equals("Spotify Free")) // Normal music
+                {
+                    if (Muted)
+                    {
+                        Thread.Sleep(500); // Give extra time for ad to change out
+                        Mute(false);
+                    }
+                    if (MainTimer.Interval != 200) MainTimer.Interval = 200;
+
+                    string artist = hook.GetArtist();
+                    string message = Properties.strings.StatusPlaying + " " + Truncate(artist);
+                    if (lastMessage != message)
+                    {
+                        lastMessage = message;
+                        StatusLabel.Text = message;
+                        artistTooltip.SetToolTip(StatusLabel, artist);
+                    }
+                }
+                else 
+                {
+                    if (Muted) Mute(false);
+
+                    string message = hook.WindowName.Equals("Spotify Free") 
+                        ? Properties.strings.StatusPaused 
+                        : Properties.strings.StatusUnknown;
+
                     if (lastMessage != message)
                     {
                         lastMessage = message;
                         StatusLabel.Text = message;
                         artistTooltip.SetToolTip(StatusLabel, "");
-                    };
+                    }
                 }
             }
-            catch (Exception ex)
+            else
             {
-                Debug.WriteLine(ex);
+                if (MainTimer.Interval != 1000) MainTimer.Interval = 1000;
+                string message = Properties.strings.StatusNotFound;
+                if (lastMessage != message)
+                {
+                    lastMessage = message;
+                    StatusLabel.Text = message;
+                    artistTooltip.SetToolTip(StatusLabel, "");
+                };
             }
         }
        
@@ -107,7 +105,15 @@ namespace EZBlocker
         private void Mute(bool mute)
         {
             AudioUtils.SetMute(hook.VolumeControl.Control, mute);
-            muted = AudioUtils.IsMuted(hook.VolumeControl.Control) ?? false;
+        }
+
+        private bool Muted
+        {
+            get
+            {
+                var c = hook?.VolumeControl?.Control;
+                return AudioUtils.IsMuted(c) ?? false;
+            }
         }
 
         private string Truncate(string name)
@@ -218,16 +224,6 @@ namespace EZBlocker
             }
         }
 
-        private void SkipAdsCheckbox_Click(object sender, EventArgs e)
-        {
-            if (!MainTimer.Enabled) return; // Still setting up UI
-            if (!IsUserAnAdmin())
-            {
-                MessageBox.Show(Properties.strings.BlockBannersUAC, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                BlockBannersCheckbox.Checked = !BlockBannersCheckbox.Checked;
-                return;
-            }
-        }
 
         private void StartupCheckbox_CheckedChanged(object sender, EventArgs e)
         {

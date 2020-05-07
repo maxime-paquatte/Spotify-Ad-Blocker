@@ -40,7 +40,6 @@
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.VolumeMixerButton = new System.Windows.Forms.Button();
             this.StatusLabel = new System.Windows.Forms.Label();
-            this.BlockBannersCheckbox = new System.Windows.Forms.CheckBox();
             this.StartupCheckbox = new System.Windows.Forms.CheckBox();
             this.SpotifyCheckbox = new System.Windows.Forms.CheckBox();
             this.NotifyIconContextMenu.SuspendLayout();
@@ -114,14 +113,6 @@
             resources.ApplyResources(this.StatusLabel, "StatusLabel");
             this.StatusLabel.Name = "StatusLabel";
             // 
-            // BlockBannersCheckbox
-            // 
-            resources.ApplyResources(this.BlockBannersCheckbox, "BlockBannersCheckbox");
-            this.BlockBannersCheckbox.Name = "BlockBannersCheckbox";
-            this.BlockBannersCheckbox.Text = global::EZBlocker.Properties.strings.BlockBannersCheckboxText;
-            this.BlockBannersCheckbox.UseVisualStyleBackColor = true;
-            this.BlockBannersCheckbox.Click += new System.EventHandler(this.SkipAdsCheckbox_Click);
-            // 
             // StartupCheckbox
             // 
             resources.ApplyResources(this.StartupCheckbox, "StartupCheckbox");
@@ -144,7 +135,6 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Controls.Add(this.SpotifyCheckbox);
             this.Controls.Add(this.StartupCheckbox);
-            this.Controls.Add(this.BlockBannersCheckbox);
             this.Controls.Add(this.StatusLabel);
             this.Controls.Add(this.VolumeMixerButton);
             this.Cursor = System.Windows.Forms.Cursors.Default;
@@ -163,7 +153,6 @@
         private System.Windows.Forms.NotifyIcon NotifyIcon;
         private System.Windows.Forms.Button VolumeMixerButton;
         private System.Windows.Forms.Label StatusLabel;
-        private System.Windows.Forms.CheckBox BlockBannersCheckbox;
         private System.Windows.Forms.Timer MainTimer;
         private System.Windows.Forms.CheckBox StartupCheckbox;
         private System.Windows.Forms.ContextMenuStrip NotifyIconContextMenu;

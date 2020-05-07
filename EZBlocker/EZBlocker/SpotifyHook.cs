@@ -8,40 +8,40 @@ namespace EZBlocker
 {
     class SpotifyHook
     {
+        public bool Hooked{ get; private set; }
         public Process Spotify { get; private set; }
         private HashSet<int> Children;
         public AudioUtils.VolumeControl VolumeControl { get; private set; }
         public string WindowName { get; private set; }
         public IntPtr Handle { get; private set; }
 
-        private readonly Timer RefreshTimer;
         private float peak = 0f;
         private float lastPeak = 0f;
 
-        public SpotifyHook()
+
+        public bool Check()
         {
-            RefreshTimer = new Timer((e) =>
+            if (!Hooked) //if never or no more hooked, start hook
+                Hooked = HookSpotify();
+            else if (!IsRunning()) // if hooked and spotify no more running, clean hook
+                CleanHook();
+            else // else inspect spotify process
             {
-                if (IsRunning() && Spotify !=null)
+                WindowName = Spotify.HasExited ? string.Empty : Spotify.MainWindowTitle;
+                Handle = Spotify.HasExited ? IntPtr.Zero : Spotify.MainWindowHandle;
+                if (VolumeControl == null)
                 {
-                    WindowName = Spotify.MainWindowTitle;
-                    Handle = Spotify.MainWindowHandle;
-                    if (VolumeControl == null)
-                    {
-                        VolumeControl = AudioUtils.GetVolumeControl(Children);
-                    }
-                    else
-                    {
-                        lastPeak = peak;
-                        peak = AudioUtils.GetPeakVolume(VolumeControl.Control);
-                    }
+                    VolumeControl = AudioUtils.GetVolumeControl(Children);
                 }
                 else
                 {
-                    ClearHooks();
-                    HookSpotify();
+                    lastPeak = peak;
+                    peak = AudioUtils.GetPeakVolume(VolumeControl.Control);
                 }
-            }, null, TimeSpan.Zero, TimeSpan.FromMilliseconds(100));
+                return true;
+            }
+
+            return false;
         }
 
         public bool IsPlaying()
@@ -53,7 +53,7 @@ namespace EZBlocker
         {
             if ((WindowName.Equals("Advertisement") || !WindowName.Contains(" - ")) && !WindowName.Equals("") && !WindowName.Equals("Drag") && IsPlaying())
             {
-                Debug.WriteLine("Ad: " + lastPeak.ToString() + " " + peak.ToString());
+                Debug.WriteLine("Ad: " + lastPeak + " " + peak);
                 return true;
             }
             return false;
@@ -70,25 +70,13 @@ namespace EZBlocker
 
         public string GetArtist()
         {
-            if (IsPlaying())
-            {
-                if (WindowName.Contains(" - "))
-                    return WindowName.Split(new[] { " - " }, StringSplitOptions.None)[0];
-                else
-                    return WindowName;
-            }
+            if (!IsPlaying()) return "";
 
-            return "";
+            if (WindowName.Contains(" - "))
+                return WindowName.Split(new[] { " - " }, StringSplitOptions.None)[0];
+            return WindowName;
         }
 
-        private void ClearHooks()
-        {
-            Spotify = null;
-            WindowName = "";
-            Handle = IntPtr.Zero;
-            if (VolumeControl != null) Marshal.ReleaseComObject(VolumeControl.Control);
-            VolumeControl = null;
-        }
 
         private bool HookSpotify()
         {
@@ -115,6 +103,19 @@ namespace EZBlocker
 
             return false;
         }
+
+
+        public void CleanHook()
+        {
+            Spotify = null;
+            WindowName = "";
+            Handle = IntPtr.Zero;
+            if (VolumeControl != null) 
+                Marshal.ReleaseComObject(VolumeControl.Control);
+            VolumeControl = null;
+            Hooked = false;
+        }
+
 
         [DllImport("user32.dll")]
         private static extern bool ShowWindow(IntPtr hwnd, int nCmdShow);
