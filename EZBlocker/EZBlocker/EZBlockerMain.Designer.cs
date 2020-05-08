@@ -42,7 +42,13 @@
             this.StatusLabel = new System.Windows.Forms.Label();
             this.StartupCheckbox = new System.Windows.Forms.CheckBox();
             this.SpotifyCheckbox = new System.Windows.Forms.CheckBox();
+            this.mediaPlayer = new AxWMPLib.AxWindowsMediaPlayer();
+            this.LocalTrackPathTb = new System.Windows.Forms.TextBox();
+            this.LocalTrackPathBtn = new System.Windows.Forms.Button();
+            this.LocalTrackPathDialog = new System.Windows.Forms.FolderBrowserDialog();
+            this.LocalTracksCountLbl = new System.Windows.Forms.Label();
             this.NotifyIconContextMenu.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.mediaPlayer)).BeginInit();
             this.SuspendLayout();
             // 
             // MainTimer
@@ -129,10 +135,38 @@
             this.SpotifyCheckbox.UseVisualStyleBackColor = true;
             this.SpotifyCheckbox.CheckedChanged += new System.EventHandler(this.SpotifyCheckbox_CheckedChanged);
             // 
+            // mediaPlayer
+            // 
+            resources.ApplyResources(this.mediaPlayer, "mediaPlayer");
+            this.mediaPlayer.Name = "mediaPlayer";
+            this.mediaPlayer.OcxState = ((System.Windows.Forms.AxHost.State)(resources.GetObject("mediaPlayer.OcxState")));
+            this.mediaPlayer.PlayStateChange += new AxWMPLib._WMPOCXEvents_PlayStateChangeEventHandler(this.MediaPlayer_PlayStateChange);
+            // 
+            // LocalTrackPathTb
+            // 
+            resources.ApplyResources(this.LocalTrackPathTb, "LocalTrackPathTb");
+            this.LocalTrackPathTb.Name = "LocalTrackPathTb";
+            // 
+            // LocalTrackPathBtn
+            // 
+            resources.ApplyResources(this.LocalTrackPathBtn, "LocalTrackPathBtn");
+            this.LocalTrackPathBtn.Name = "LocalTrackPathBtn";
+            this.LocalTrackPathBtn.UseVisualStyleBackColor = true;
+            this.LocalTrackPathBtn.Click += new System.EventHandler(this.LocalTrackPathBtn_Click);
+            // 
+            // LocalTracksCountLbl
+            // 
+            resources.ApplyResources(this.LocalTracksCountLbl, "LocalTracksCountLbl");
+            this.LocalTracksCountLbl.Name = "LocalTracksCountLbl";
+            // 
             // Main
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.LocalTracksCountLbl);
+            this.Controls.Add(this.LocalTrackPathBtn);
+            this.Controls.Add(this.LocalTrackPathTb);
+            this.Controls.Add(this.mediaPlayer);
             this.Controls.Add(this.SpotifyCheckbox);
             this.Controls.Add(this.StartupCheckbox);
             this.Controls.Add(this.StatusLabel);
@@ -144,6 +178,7 @@
             this.Load += new System.EventHandler(this.Main_Load);
             this.Resize += new System.EventHandler(this.Form_Resize);
             this.NotifyIconContextMenu.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.mediaPlayer)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -162,6 +197,11 @@
         private System.Windows.Forms.ToolStripMenuItem websiteToolStripMenuItem;
         private System.Windows.Forms.CheckBox SpotifyCheckbox;
         private System.Windows.Forms.ToolStripMenuItem undoPatchToolStripMenuItem;
+        private AxWMPLib.AxWindowsMediaPlayer mediaPlayer;
+        private System.Windows.Forms.TextBox LocalTrackPathTb;
+        private System.Windows.Forms.Button LocalTrackPathBtn;
+        private System.Windows.Forms.FolderBrowserDialog LocalTrackPathDialog;
+        private System.Windows.Forms.Label LocalTracksCountLbl;
     }
 }
 

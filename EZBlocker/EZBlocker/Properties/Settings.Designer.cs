@@ -94,5 +94,17 @@ namespace EZBlocker.Properties {
                 this["SpotifyPath"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string LocalTracksPath {
+            get {
+                return ((string)(this["LocalTracksPath"]));
+            }
+            set {
+                this["LocalTracksPath"] = value;
+            }
+        }
     }
 }

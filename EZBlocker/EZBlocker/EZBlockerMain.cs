@@ -1,128 +1,117 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Windows.Forms;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Microsoft.Win32;
 
 namespace EZBlocker
 {
+    public enum LocalTrackState
+    {
+        Stop,
+        Play,
+        End
+    }
+
     public partial class Main : Form
     {
-        private string lastMessage = "";
-        private readonly ToolTip artistTooltip = new ToolTip();
         private readonly string volumeMixerPath = Environment.GetEnvironmentVariable("WINDIR") + @"\System32\SndVol.exe";
+        private readonly ISpotifyHook hook;
 
-        private SpotifyHook hook;
+        private readonly Random random = new Random();
+        private LocalTrackState localTrackState;
+        private string[] tracks;
 
         public Main()
         {
+            // Start Spotify hook
+            hook = new SpotifyHook();//new SpotifyHookMoq(this);// 
+
             Thread.CurrentThread.CurrentUICulture = Thread.CurrentThread.CurrentCulture;
+            
             InitializeComponent();
         }
 
+        private void LoadLocalTracks()
+        {
+            var p = Properties.Settings.Default.LocalTracksPath;
+            LocalTrackPathTb.Text = Properties.Settings.Default.LocalTracksPath;
+            if (!string.IsNullOrEmpty(p) && Directory.Exists(p))
+                tracks = Directory.GetFiles(Properties.Settings.Default.LocalTracksPath);
+            else tracks = new string[0];
+            LocalTracksCountLbl.Text = "(" + tracks.Length + ")";
+        }
+
+        private void PlayLocalTrack()
+        {
+            if (tracks.Length > 0)
+            {
+                var t = tracks[random.Next(tracks.Length)];
+                mediaPlayer.URL = t;
+                mediaPlayer.Ctlcontrols.play();
+                localTrackState = LocalTrackState.Play;
+            }
+            else
+                localTrackState = LocalTrackState.End;
+        }
+       
 
         /**
          * Contains the logic for when to mute Spotify
          **/
         private void MainTimer_Tick(object sender, EventArgs e)
         {
-            if (hook.Check())
+            var s = hook.Check();
+            if (s != SpotifyState.NonHooked)
             {
-                if (hook.IsAdPlaying())
-                {
-                    if (MainTimer.Interval != 1000) MainTimer.Interval = 1000;
-                    if (!Muted) Mute(true);
+                if (MainTimer.Interval != 200) MainTimer.Interval = 200;
 
-                    if (!hook.IsPlaying())
+                if (s == SpotifyState.PlayingAd && localTrackState == LocalTrackState.Stop)
+                {
+                    if (!hook.IsMuted) hook.Mute(true);
+                    PlayLocalTrack();
+
+                    if (!hook.IsPlaying()) //if Spotify is not playing Ad, play next
                     {
-                        AudioUtils.SendNextTrack(hook.Handle == IntPtr.Zero ? Handle : hook.Handle);
+                        hook.NextTrack();
                         Thread.Sleep(500);
                     }
 
-                    string artist = hook.GetArtist();
-                    string message = Properties.strings.StatusMuting + " " + Truncate(artist);
-                    if (lastMessage != message)
-                    {
-                        lastMessage = message;
-                        StatusLabel.Text = message;
-                        artistTooltip.SetToolTip(StatusLabel, artist);
-                    }
                 }
-                else if (hook.IsPlaying() && !hook.WindowName.Equals("Spotify Free")) // Normal music
+                else if (s == SpotifyState.Playing && localTrackState == LocalTrackState.Play) // end of ad, pause spotify while local trac end
                 {
-                    if (Muted)
+                    hook.PlayPause();
+                }
+                else if (s == SpotifyState.Pause && localTrackState == LocalTrackState.End) // local track end, resume spotify
+                {
+                    hook.PlayPause();
+                    localTrackState = LocalTrackState.Stop;
+                }
+                else if (s == SpotifyState.Playing) // Normal music
+                {
+                    if (hook.IsMuted)
                     {
                         Thread.Sleep(500); // Give extra time for ad to change out
-                        Mute(false);
+                        hook.Mute(false);
                     }
-                    if (MainTimer.Interval != 200) MainTimer.Interval = 200;
 
-                    string artist = hook.GetArtist();
-                    string message = Properties.strings.StatusPlaying + " " + Truncate(artist);
-                    if (lastMessage != message)
-                    {
-                        lastMessage = message;
-                        StatusLabel.Text = message;
-                        artistTooltip.SetToolTip(StatusLabel, artist);
-                    }
+                    StatusLabel.Text = Properties.strings.StatusPlaying;
                 }
-                else 
-                {
-                    if (Muted) Mute(false);
-
-                    string message = hook.WindowName.Equals("Spotify Free") 
-                        ? Properties.strings.StatusPaused 
-                        : Properties.strings.StatusUnknown;
-
-                    if (lastMessage != message)
-                    {
-                        lastMessage = message;
-                        StatusLabel.Text = message;
-                        artistTooltip.SetToolTip(StatusLabel, "");
-                    }
-                }
+                else if (s == SpotifyState.Pause) // Normal music
+                    StatusLabel.Text = Properties.strings.StatusPaused;
+                else
+                    StatusLabel.Text = Properties.strings.StatusUnknown;
             }
             else
             {
                 if (MainTimer.Interval != 1000) MainTimer.Interval = 1000;
-                string message = Properties.strings.StatusNotFound;
-                if (lastMessage != message)
-                {
-                    lastMessage = message;
-                    StatusLabel.Text = message;
-                    artistTooltip.SetToolTip(StatusLabel, "");
-                };
+                StatusLabel.Text = Properties.strings.StatusNotFound;
             }
-        }
-       
-        /**
-         * Mutes/Unmutes Spotify.         
-         * i: false = unmute, true = mute
-         **/
-        private void Mute(bool mute)
-        {
-            AudioUtils.SetMute(hook.VolumeControl.Control, mute);
-        }
-
-        private bool Muted
-        {
-            get
-            {
-                var c = hook?.VolumeControl?.Control;
-                return AudioUtils.IsMuted(c) ?? false;
-            }
-        }
-
-        private string Truncate(string name)
-        {
-            if (name.Length > 10)
-            {
-                return name.Substring(0, 10) + "...";
-            }
-            return name;
         }
 
 
@@ -134,6 +123,9 @@ namespace EZBlocker
                 Properties.Settings.Default.UpdateSettings = false;
                 Properties.Settings.Default.Save();
             }
+
+            
+            LoadLocalTracks();
 
             string spotifyPath = GetSpotifyPath();
             if (spotifyPath != "")
@@ -172,8 +164,6 @@ namespace EZBlocker
             }
             SpotifyCheckbox.Checked = Properties.Settings.Default.StartSpotify;
            
-            // Start Spotify hook
-            hook = new SpotifyHook();
             MainTimer.Enabled = true;
         }
 
@@ -238,8 +228,7 @@ namespace EZBlocker
                 startupKey.DeleteValue("EZBlocker");
             }
         }
-
-
+        
         private void SpotifyCheckbox_CheckedChanged(object sender, EventArgs e)
         {
             if (!MainTimer.Enabled) return; // Still setting up UI
@@ -258,19 +247,16 @@ namespace EZBlocker
                 MessageBox.Show(Properties.strings.VolumeMixerOpenError, "EZBlocker");
             }
         }
-
-        private void WebsiteLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
-        {
-            if (File.Exists(Properties.Settings.Default.SpotifyPath))
-            {
-                MessageBox.Show(Properties.strings.ReportProblemMessageBox.Replace("{0}", Assembly.GetExecutingAssembly().GetName().Version.ToString()).Replace("{1}", FileVersionInfo.GetVersionInfo(Properties.Settings.Default.SpotifyPath).FileVersion), "EZBlocker");
-                Clipboard.SetText(Properties.strings.ReportProblemClipboard.Replace("{0}", Assembly.GetExecutingAssembly().GetName().Version.ToString()).Replace("{1}", FileVersionInfo.GetVersionInfo(Properties.Settings.Default.SpotifyPath).FileVersion));
-            }
-        }
-
+        
         private void openToolStripMenuItem_Click(object sender, EventArgs e)
         {
             RestoreFromTray();
+        }
+
+        private void MediaPlayer_PlayStateChange(object sender, AxWMPLib._WMPOCXEvents_PlayStateChangeEvent e)
+        {
+            if (e.newState == 8)//MediaEnded
+                localTrackState = LocalTrackState.End;
         }
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
@@ -296,9 +282,18 @@ namespace EZBlocker
                     Properties.Settings.Default.Save();
                 }
             }
-        }
 
-        [DllImport("shell32.dll")]
-        public static extern bool IsUserAnAdmin();
+            Properties.Settings.Default.Save();
+        }
+        
+        private void LocalTrackPathBtn_Click(object sender, EventArgs e)
+        {
+            var r = LocalTrackPathDialog.ShowDialog(this);
+            if (r == DialogResult.OK)
+            {
+                Properties.Settings.Default.LocalTracksPath = LocalTrackPathDialog.SelectedPath;
+                LoadLocalTracks();
+            }
+        }
     }
 }
